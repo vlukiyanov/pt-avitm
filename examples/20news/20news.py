@@ -35,6 +35,12 @@ from ptavitm.vae import ProdLDA
     default=20
 )
 @click.option(
+    '--top-words',
+    help='number of top words to report per topic (default 12).',
+    type=int,
+    default=12
+)
+@click.option(
     '--testing-mode',
     help='whether to run in testing mode (default False).',
     type=bool,
@@ -44,6 +50,7 @@ def main(
     cuda,
     batch_size,
     epochs,
+    top_words,
     testing_mode
 ):
     print('Loading input data')
@@ -52,6 +59,7 @@ def main(
     input_val = np.load('data/test.txt.npy', encoding='bytes')
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
+    reverse_vocab = {vocab[word]: word for word in vocab}
     data_train = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0])
     data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
 
@@ -92,13 +100,23 @@ def main(
         shuffle=False
     )
     autoencoder.eval()
-    features = []
-    for index, batch in enumerate(dataloader):
-        batch[0] = batch
-        if cuda:
-            batch = batch.cuda(non_blocking=True)
-        features.append(autoencoder.encoder(batch).detach().cpu())
-    print(1)
+    # mean_batches = []
+    # var_batches = []
+    # for batch in dataloader:
+    #     batch = batch[0]
+    #     if cuda:
+    #         batch = batch.cuda(non_blocking=True)
+    #     _, mean, logvar = autoencoder.encode(batch)
+    #     mean_batches.append(mean.detach())
+    #     var_batches.append(logvar.exp().detach())
+    # mean = torch.cat(mean_batches).cpu()
+    # var = torch.cat(var_batches).cpu()
+    decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
+    topics = [
+        [reverse_vocab[item.item()] for item in topic] for topic in decoder_weight.topk(top_words, dim=0)[1].t()
+    ]
+    for topic in topics:
+        print(','.join(topic))
     # if not testing_mode:
     #     writer.add_embedding(
     #         torch.cat(features),
