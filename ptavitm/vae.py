@@ -74,6 +74,7 @@ class ProdLDA(nn.Module):
              reconstructed_tensor: torch.Tensor,
              posterior_mean: torch.Tensor,
              posterior_logvar: torch.Tensor) -> torch.Tensor:
+        # modified from https://github.com/hyqneuron/pytorch-avitm
         # NL
         NL = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         # KLD, see Section 3.3 of Akash Srivastava and Charles Sutton, 2017,
