@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.6"
+  - "3.7-dev"
+# command to install dependencies
+install:
+  - pip install -q -r requirements.txt
+  - python setup.py install
+# command to run tests
+script:
+  - pytest --cov=ptavitm
+after_success:
+  - codecov
