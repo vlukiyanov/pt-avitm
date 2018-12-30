@@ -7,14 +7,15 @@ from unittest.mock import Mock
 def test_train():
     autoencoder = Mock()
     autoencoder.return_value = [torch.tensor([1, 1], dtype=torch.float)] * 3
+    autoencoder.loss.return_value = torch.tensor([1, 1], dtype=torch.float).requires_grad_()
     optimizer = Mock()
     dataset = TensorDataset(torch.zeros(100, 1000))
     train(
-        dataset,
-        autoencoder,
-        1,
-        10,
-        optimizer
+        dataset=dataset,
+        autoencoder=autoencoder,
+        epochs=1,
+        batch_size=10,
+        optimizer=optimizer
     )
     autoencoder.train.assert_called_once()
     assert autoencoder.call_count == 10

@@ -4,6 +4,7 @@ from ptavitm.vae import prior, ProdLDA
 
 
 def test_prior():
+    # check against the code in https://git.io/fhL6y
     prior_mean, prior_var = prior(50)
     assert prior_mean.allclose(prior_mean.new().resize_as_(prior_mean).fill_(0.0))
     assert prior_var.allclose(prior_var.new().resize_as_(prior_var).fill_(0.98))
