@@ -75,8 +75,7 @@ class ProdLDA(nn.Module):
              posterior_mean: torch.Tensor,
              posterior_logvar: torch.Tensor) -> torch.Tensor:
         # modified from https://github.com/hyqneuron/pytorch-avitm
-        # NL
-        NL = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
+        nl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         # KLD, see Section 3.3 of Akash Srivastava and Charles Sutton, 2017,
         # https://arxiv.org/pdf/1703.01488.pdf
         prior_mean = self.prior_mean.expand_as(posterior_mean).requires_grad_()
@@ -87,6 +86,6 @@ class ProdLDA(nn.Module):
         diff_term = diff * diff / prior_var
         logvar_division = prior_logvar - posterior_logvar
         # put KLD together
-        KLD = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+        kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
         # loss
-        return NL + KLD
+        return nl + kld
