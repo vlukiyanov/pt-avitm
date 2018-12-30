@@ -19,15 +19,15 @@ from ptavitm.vae import ProdLDA
 )
 @click.option(
     '--batch-size',
-    help='training batch size (default 256).',
+    help='training batch size (default 200).',
     type=int,
-    default=256
+    default=200
 )
 @click.option(
     '--epochs',
-    help='number of finetune epochs (default 500).',
+    help='number of finetune epochs (default 80).',
     type=int,
-    default=20
+    default=80
 )
 @click.option(
     '--top-words',
