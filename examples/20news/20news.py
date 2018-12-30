@@ -25,7 +25,7 @@ from ptavitm.vae import ProdLDA
 )
 @click.option(
     '--epochs',
-    help='number of finetune epochs (default 80).',
+    help='number of epochs (default 80).',
     type=int,
     default=80
 )
@@ -59,14 +59,15 @@ def main(
     data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
 
     writer = SummaryWriter()  # create the TensorBoard object
-    # callback function to call during training, uses writer from the scope
 
+    # callback function to call during training, uses writer from the scope
     def training_callback(epoch, lr, loss, validation_loss):
         writer.add_scalars('data/autoencoder', {
             'lr': lr,
             'loss': loss,
             'validation_loss': validation_loss,
         }, epoch)
+
     ds_train = TensorDataset(torch.from_numpy(data_train).float())
     ds_val = TensorDataset(torch.from_numpy(data_val).float())
     autoencoder = ProdLDA(
