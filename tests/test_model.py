@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 def test_train():
     autoencoder = Mock()
-    autoencoder.return_value = [torch.tensor([1, 1], dtype=torch.float)]*3
+    autoencoder.return_value = [torch.tensor([1, 1], dtype=torch.float)] * 3
     optimizer = Mock()
     dataset = TensorDataset(torch.zeros(100, 1000))
     train(
@@ -30,4 +30,3 @@ def test_predict():
     output = predict(dataset, autoencoder, batch_size=10)
     assert autoencoder.encode.call_count == 10
     assert output.shape == (10,)
-

@@ -1,4 +1,3 @@
-import pytest
 import torch
 
 from ptavitm.vae import prior, ProdLDA
@@ -7,8 +6,8 @@ from ptavitm.vae import prior, ProdLDA
 def test_prior():
     # TODO close enough but needs further testing
     prior_mean, prior_var = prior(50)
-    #print(prior_mean)
-    #print(prior_var)
+    # print(prior_mean)
+    # print(prior_var)
 
 
 def test_dimensions():

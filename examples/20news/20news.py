@@ -1,19 +1,14 @@
 import click
 import numpy as np
-import seaborn as sns
-from sklearn.metrics import confusion_matrix
 from torch.optim import Adam
-from torch.optim.lr_scheduler import StepLR
 import torch
-from torch.utils.data import DataLoader, Dataset, TensorDataset
-from torchvision import transforms
-from torchvision.datasets import MNIST
+from torch.utils.data import TensorDataset
 from tensorboardX import SummaryWriter
-import uuid
 import pickle
 
-from ptavitm.model import train, predict
+from ptavitm.model import train
 from ptavitm.vae import ProdLDA
+
 
 @click.command()
 @click.option(
@@ -94,11 +89,11 @@ def main(
         optimizer=ae_optimizer,
         update_callback=None  # TODO
     )
-    dataloader = DataLoader(
-        ds_train,
-        batch_size=1024,
-        shuffle=False
-    )
+    # dataloader = DataLoader(
+    #     ds_train,
+    #     batch_size=1024,
+    #     shuffle=False
+    # )
     autoencoder.eval()
     # mean_batches = []
     # var_batches = []
