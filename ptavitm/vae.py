@@ -60,7 +60,7 @@ class ProdLDA(nn.Module):
 
     def decode(self, mean: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         # Same as _generator_network method in the original TensorFlow implementation at https://git.io/fhUJu
-        eps = mean.new().resize_as_(mean.data).normal_(mean=0, std=1).requires_grad_()  # TODO needs grad?
+        eps = mean.new().resize_as_(mean.data).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
         return self.decoder(z)
 
