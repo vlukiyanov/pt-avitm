@@ -117,7 +117,6 @@ def train(dataset: torch.utils.data.Dataset,
 
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
-    # TODO this seems wrong
     model.eval()
     data_iterator = tqdm(loader, leave=False, unit='batch', disable=silent)
     losses = []
