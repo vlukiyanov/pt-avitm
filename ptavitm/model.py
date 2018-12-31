@@ -93,6 +93,7 @@ def train(dataset: torch.utils.data.Dataset,
             )
         if update_freq is not None and epoch % update_freq == 0:
             if validation_loader is not None:
+                autoencoder.eval()
                 validation_loss_value = perplexity(validation_loader, autoencoder, cuda, silent)
                 data_iterator.set_postfix(
                     epo=epoch,

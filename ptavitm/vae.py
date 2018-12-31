@@ -37,20 +37,28 @@ class ProdLDA(nn.Module):
         ]))
         self.mean = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=False))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
         ]))
         self.logvar = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=False))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
         ]))
         self.decoder = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(topics, in_dimension, bias=False)),
-            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=False)),
-            ('act', nn.Softmax(dim=0)),
+            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True)),
+            ('act', nn.Softmax(dim=1)),
             ('dropout', nn.Dropout(decoder_noise))
         ]))
+        # set the priors, do not learn them
         self.prior_mean, self.prior_var = prior(topics)
         self.prior_logvar = self.prior_var.log()
+        self.prior_mean.requires_grad = False
+        self.prior_var.requires_grad = False
+        self.prior_logvar.requires_grad = False
+        # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
+        for component in [self.mean, self.logvar, self.decoder]:
+            component.batchnorm.weight.fill_(1.0)
+            component.batchnorm.weight.requires_grad = False
         # initialize decoder weight
         nn.init.xavier_uniform_(self.decoder.linear.weight, gain=1)
 
@@ -89,9 +97,9 @@ class ProdLDA(nn.Module):
         # reconstruction loss
         rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         # KL divergence
-        prior_mean = self.prior_mean.expand_as(posterior_mean).requires_grad_()
-        prior_var = self.prior_var.expand_as(posterior_mean).requires_grad_()
-        prior_logvar = self.prior_logvar.expand_as(posterior_mean).requires_grad_()
+        prior_mean = self.prior_mean.expand_as(posterior_mean)
+        prior_var = self.prior_var.expand_as(posterior_logvar)
+        prior_logvar = self.prior_logvar.expand_as(posterior_logvar)
         var_division = posterior_logvar.exp() / prior_var
         diff = posterior_mean - prior_mean
         diff_term = diff * diff / prior_var
