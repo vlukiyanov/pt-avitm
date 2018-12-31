@@ -53,7 +53,7 @@ class ProdLDA(nn.Module):
         self.prior_mean, self.prior_var = prior(topics)
         self.prior_logvar = self.prior_var.log()
         # do not learn the batchnorm weight
-        for component in [self.encoder, self.mean, self.logvar, self.decoder]:
+        for component in [self.mean, self.logvar, self.decoder]:
             component.batchnorm.weight.requires_grad = False
         # initialize decoder weight
         nn.init.xavier_uniform_(self.decoder.linear.weight, gain=1)
