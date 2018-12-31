@@ -23,6 +23,11 @@ def test_train():
     assert optimizer.step.call_count == 10
 
 
+def test_perplexity():
+    # TODO
+    raise NotImplementedError
+
+
 def test_predict():
     # only tests the encode=True
     autoencoder = Mock()

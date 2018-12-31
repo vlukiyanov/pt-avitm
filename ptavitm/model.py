@@ -93,6 +93,7 @@ def train(dataset: torch.utils.data.Dataset,
             )
         if update_freq is not None and epoch % update_freq == 0:
             if validation_loader is not None:
+                autoencoder.eval()
                 validation_loss_value = perplexity(validation_loader, autoencoder, cuda, silent)
                 data_iterator.set_postfix(
                     epo=epoch,
@@ -116,6 +117,7 @@ def train(dataset: torch.utils.data.Dataset,
 
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
+    # TODO this seems wrong
     model.eval()
     data_iterator = tqdm(loader, leave=False, unit='batch', disable=silent)
     losses = []
