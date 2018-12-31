@@ -37,20 +37,24 @@ class ProdLDA(nn.Module):
         ]))
         self.mean = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=False))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
         ]))
         self.logvar = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=False))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
         ]))
         self.decoder = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(topics, in_dimension, bias=False)),
-            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=False)),
+            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True)),
             ('act', nn.Softmax(dim=0)),
             ('dropout', nn.Dropout(decoder_noise))
         ]))
+        # set the priors
         self.prior_mean, self.prior_var = prior(topics)
         self.prior_logvar = self.prior_var.log()
+        # do not learn the batchnorm weight
+        for component in [self.encoder, self.mean, self.logvar, self.decoder]:
+            component.batchnorm.weight.requires_grad = False
         # initialize decoder weight
         nn.init.xavier_uniform_(self.decoder.linear.weight, gain=1)
 
