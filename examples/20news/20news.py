@@ -46,27 +46,30 @@ def main(
     batch_size,
     epochs,
     top_words,
-    testing_mode
+    testing_mode,
 ):
     print('Loading input data')
-    # fix relative
+    # TODO fix relative paths
     input_train = np.load('data/train.txt.npy', encoding='bytes')
     input_val = np.load('data/test.txt.npy', encoding='bytes')
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
     reverse_vocab = {vocab[word]: word for word in vocab}
-    data_train = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0])
+    indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]
+    data_train = np.array(
+        [np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0]
+    )
     data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
 
     writer = SummaryWriter()  # create the TensorBoard object
 
     # callback function to call during training, uses writer from the scope
-    def training_callback(epoch, lr, loss, validation_loss):
+    def training_callback(autoencoder, epoch, lr, loss, perplexity):
         writer.add_scalars('data/autoencoder', {
             'lr': lr,
             'loss': loss,
-            'validation_loss': validation_loss,
-        }, epoch)
+            'perplexity': perplexity,
+        }, global_step=epoch)
 
     ds_train = TensorDataset(torch.from_numpy(data_train).float())
     ds_val = TensorDataset(torch.from_numpy(data_val).float())
@@ -88,25 +91,9 @@ def main(
         epochs=epochs,
         batch_size=batch_size,
         optimizer=ae_optimizer,
-        update_callback=None  # TODO
+        update_callback=training_callback
     )
-    # dataloader = DataLoader(
-    #     ds_train,
-    #     batch_size=1024,
-    #     shuffle=False
-    # )
     autoencoder.eval()
-    # mean_batches = []
-    # var_batches = []
-    # for batch in dataloader:
-    #     batch = batch[0]
-    #     if cuda:
-    #         batch = batch.cuda(non_blocking=True)
-    #     _, mean, logvar = autoencoder.encode(batch)
-    #     mean_batches.append(mean.detach())
-    #     var_batches.append(logvar.exp().detach())
-    # mean = torch.cat(mean_batches).cpu()
-    # var = torch.cat(var_batches).cpu()
     decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
     topics = [
         [reverse_vocab[item.item()] for item in topic]
@@ -114,14 +101,13 @@ def main(
     ]
     for topic in topics:
         print(','.join(topic))
-    # if not testing_mode:
-    #     writer.add_embedding(
-    #         torch.cat(features),
-    #         metadata=predicted,
-    #         label_img=ds_train.ds.train_data.float().unsqueeze(1),  # TODO bit ugly
-    #         tag='predicted'
-    #     )
-    #     writer.close()
+    if not testing_mode:
+        writer.add_embedding(
+            autoencoder.encoder.linear1.weight.detach().cpu().t(),
+            metadata=indexed_vocab,
+            tag='feature_embeddings',
+        )
+    writer.close()
 
 
 if __name__ == '__main__':
