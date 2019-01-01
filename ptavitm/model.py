@@ -56,7 +56,7 @@ def train(dataset: torch.utils.data.Dataset,
     else:
         validation_loader = None
     autoencoder.train()
-    validation_loss_value = -1
+    perplexity_value = -1
     loss_value = 0
     for epoch in range(epochs):
         if scheduler is not None:
@@ -68,10 +68,11 @@ def train(dataset: torch.utils.data.Dataset,
             postfix={
                 'epo': epoch,
                 'lss': '%.6f' % 0.0,
-                'vls': '%.6f' % -1,
+                'ppx': '%.6f' % -1,
             },
             disable=silent,
         )
+        losses = []
         for index, batch in enumerate(data_iterator):
             batch = batch[0]
             if cuda:
@@ -81,35 +82,39 @@ def train(dataset: torch.utils.data.Dataset,
                 recon, mean, logvar = autoencoder(F.dropout(batch, corruption))
             else:
                 recon, mean, logvar = autoencoder(batch)
+            # calculate the loss and backprop
             loss = autoencoder.loss(batch, recon, mean, logvar).mean()
             loss_value = float(loss.mean().item())
             optimizer.zero_grad()
             loss.backward()
             optimizer.step(closure=None)
+            # log losses
+            losses.append(loss_value)
             data_iterator.set_postfix(
                 epo=epoch,
                 lss='%.6f' % loss_value,
-                vls='%.6f' % validation_loss_value,
+                ppx='%.6f' % perplexity_value,
             )
         if update_freq is not None and epoch % update_freq == 0:
+            average_loss = (sum(losses)/len(losses)) if len(losses) > 0 else -1
             if validation_loader is not None:
                 autoencoder.eval()
-                validation_loss_value = perplexity(validation_loader, autoencoder, cuda, silent)
+                perplexity_value = perplexity(validation_loader, autoencoder, cuda, silent)
                 data_iterator.set_postfix(
                     epo=epoch,
-                    lss='%.6f' % loss_value,
-                    vls='%.6f' % validation_loss_value,
+                    lss='%.6f' % average_loss,
+                    ppx='%.6f' % perplexity_value,
                 )
                 autoencoder.train()
             else:
-                validation_loss_value = -1
+                perplexity_value = -1
                 data_iterator.set_postfix(
                     epo=epoch,
-                    lss='%.6f' % loss_value,
-                    vls='%.6f' % -1,
+                    lss='%.6f' % average_loss,
+                    ppx='%.6f' % -1,
                 )
             if update_callback is not None:
-                update_callback(epoch, optimizer.param_groups[0]['lr'], loss_value, validation_loss_value)
+                update_callback(autoencoder, epoch, optimizer.param_groups[0]['lr'], average_loss, perplexity_value)
         if epoch_callback is not None:
             autoencoder.eval()
             epoch_callback(epoch, autoencoder)
