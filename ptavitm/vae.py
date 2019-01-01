@@ -18,6 +18,32 @@ def prior(topics):
     return mean.t(), var.t()
 
 
+def encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise=0.2):
+    return nn.Sequential(OrderedDict([
+        ('linear1', nn.Linear(in_dimension, hidden1_dimension)),
+        ('act1', nn.Softplus()),
+        ('linear2', nn.Linear(hidden1_dimension, hidden2_dimension)),
+        ('act2', nn.Softplus()),
+        ('dropout', nn.Dropout(encoder_noise))
+    ]))
+
+
+def decoder(in_dimension, topics, decoder_noise, eps, momentum):
+    return nn.Sequential(OrderedDict([
+        ('linear', nn.Linear(topics, in_dimension, bias=False)),
+        ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=eps, momentum=momentum)),
+        ('act', nn.Softmax(dim=1)),
+        ('dropout', nn.Dropout(decoder_noise))
+    ]))
+
+
+def hidden(hidden2_dimension, topics, eps, momentum):
+    return nn.Sequential(OrderedDict([
+        ('linear', nn.Linear(hidden2_dimension, topics)),
+        ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=eps, momentum=momentum))
+    ]))
+
+
 class ProdLDA(nn.Module):
     def __init__(self,
                  in_dimension: int,
@@ -25,30 +51,17 @@ class ProdLDA(nn.Module):
                  hidden2_dimension: int,
                  topics: int,
                  decoder_noise: float = 0.2,
-                 encoder_noise: float = 0.2) -> None:
+                 encoder_noise: float = 0.2,
+                 batchnorm_eps: float = 0.001,
+                 batchnorm_momentum: float = 0.001) -> None:
         super(ProdLDA, self).__init__()
         self.topics = topics
-        self.encoder = nn.Sequential(OrderedDict([
-            ('linear1', nn.Linear(in_dimension, hidden1_dimension)),
-            ('act1', nn.Softplus()),
-            ('linear2', nn.Linear(hidden1_dimension, hidden2_dimension)),
-            ('act2', nn.Softplus()),
-            ('dropout', nn.Dropout(encoder_noise))
-        ]))
-        self.mean = nn.Sequential(OrderedDict([
-            ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=0.001, momentum=0.001))
-        ]))
-        self.logvar = nn.Sequential(OrderedDict([
-            ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=0.001, momentum=0.001))
-        ]))
-        self.decoder = nn.Sequential(OrderedDict([
-            ('linear', nn.Linear(topics, in_dimension, bias=False)),
-            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=0.001, momentum=0.001)),
-            ('act', nn.Softmax(dim=1)),
-            ('dropout', nn.Dropout(decoder_noise))
-        ]))
+        self.encoder = encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise)
+        self.mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.decoder = decoder(
+            in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
+        )
         # set the priors, do not learn them
         self.prior_mean, self.prior_var = prior(topics)
         self.prior_logvar = self.prior_var.log()
