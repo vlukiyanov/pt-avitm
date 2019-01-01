@@ -109,7 +109,8 @@ def main(
     # var = torch.cat(var_batches).cpu()
     decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
     topics = [
-        [reverse_vocab[item.item()] for item in topic] for topic in decoder_weight.topk(top_words, dim=0)[1].t()
+        [reverse_vocab[item.item()] for item in topic]
+        for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
     for topic in topics:
         print(','.join(topic))
