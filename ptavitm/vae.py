@@ -37,15 +37,15 @@ class ProdLDA(nn.Module):
         ]))
         self.mean = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=0.001, momentum=0.001))
         ]))
         self.logvar = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(hidden2_dimension, topics)),
-            ('batchnorm', nn.BatchNorm1d(topics, affine=True))
+            ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=0.001, momentum=0.001))
         ]))
         self.decoder = nn.Sequential(OrderedDict([
             ('linear', nn.Linear(topics, in_dimension, bias=False)),
-            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True)),
+            ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=0.001, momentum=0.001)),
             ('act', nn.Softmax(dim=1)),
             ('dropout', nn.Dropout(decoder_noise))
         ]))
@@ -57,8 +57,8 @@ class ProdLDA(nn.Module):
         self.prior_logvar.requires_grad = False
         # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.decoder]:
-            component.batchnorm.weight.fill_(1.0)
             component.batchnorm.weight.requires_grad = False
+            component.batchnorm.weight.fill_(1.0)
         # initialize decoder weight
         nn.init.xavier_uniform_(self.decoder.linear.weight, gain=1)
 
