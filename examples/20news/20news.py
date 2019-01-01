@@ -79,7 +79,7 @@ def main(
     if cuda:
         autoencoder.cuda()
     print('Training stage.')
-    ae_optimizer = Adam(autoencoder.parameters(), 0.002, betas=(0.99, 0.999))
+    ae_optimizer = Adam(autoencoder.parameters(), 0.001, betas=(0.99, 0.999))
     train(
         ds_train,
         autoencoder,
