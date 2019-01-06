@@ -11,14 +11,11 @@ def test_prior():
 
 
 def test_copy_embeddings():
-    def embedding(word):
-        return torch.ones(300) if word == 'test' else None
-
-    lookup = {**{index: 'z'*index for index in range(9)}, **{9: 'test'}}
+    lookup = {9: torch.ones(300)}
     module = torch.nn.Linear(10, 300)
     with torch.no_grad():
         module.weight.copy_(torch.zeros(300, 10))
-        copy_embeddings_(module.weight, embedding, lookup)
+        copy_embeddings_(module.weight, lookup)
     assert module.weight[:, 9].eq(1).all()
     for index in range(9):
         assert module.weight[:, index].eq(0).all()

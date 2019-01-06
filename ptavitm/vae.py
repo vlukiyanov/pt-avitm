@@ -3,7 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from typing import Callable, Mapping, Optional, Tuple
+from typing import Callable, Mapping, Optional, Tuple, Union
 
 
 def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -32,20 +32,17 @@ def encoder(in_dimension: int,
     ]))
 
 
-def copy_embeddings_(tensor: torch.Tensor,
-                     embedding: Callable[[str], Optional[torch.Tensor]],
-                     lookup: Mapping[int, str]) -> None:
+def copy_embeddings_(tensor: torch.Tensor, lookup: Mapping[int, torch.Tensor] = None) -> None:
     """
     Helper function for mutating the weight of an initial linear embedding module using
     precomputed word vectors.
 
     :param tensor: weight Tensor to mutate of shape [embedding_dimension, features]
-    :param embedding: callable which given a word string returns its embedding Tensor or None if out of vocabulary
-    :param lookup: given an index return the corresponding word string
+    :param lookup: given an index return the corresponding Tensor
     :return: None
     """
     for index in range(tensor.shape[1]):
-        current_embedding = embedding(lookup[index])
+        current_embedding = lookup.get(index)
         if current_embedding is not None:
             tensor[:, index].copy_(current_embedding)
 
@@ -79,6 +76,7 @@ class ProdLDA(nn.Module):
                  hidden1_dimension: int,
                  hidden2_dimension: int,
                  topics: int,
+                 init_embeddings: Tuple[Callable[[str], Optional[torch.Tensor]], ],
                  decoder_noise: float = 0.2,
                  encoder_noise: float = 0.2,
                  batchnorm_eps: float = 0.001,
