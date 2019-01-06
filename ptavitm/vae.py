@@ -76,7 +76,6 @@ class ProdLDA(nn.Module):
                  hidden1_dimension: int,
                  hidden2_dimension: int,
                  topics: int,
-                 init_embeddings: Tuple[Callable[[str], Optional[torch.Tensor]], ],
                  decoder_noise: float = 0.2,
                  encoder_noise: float = 0.2,
                  batchnorm_eps: float = 0.001,
