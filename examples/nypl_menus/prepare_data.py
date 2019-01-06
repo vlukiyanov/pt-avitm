@@ -49,7 +49,7 @@ texts = (
 texts['processed_text'] = texts['text'].apply(process)
 
 print('Vectorising data')
-vectorizer = CountVectorizer(stop_words='english', max_features=max_features)
+vectorizer = CountVectorizer(stop_words='english', max_features=max_features, max_df=0.9)
 term_document = vectorizer.fit_transform(texts['processed_text'])
 
 print('Saving data')
