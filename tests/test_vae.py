@@ -11,13 +11,14 @@ def test_prior():
 
 
 def test_copy_embeddings():
-    lookup = {9: torch.ones(300)}
+    lookup = {9: torch.ones(300), 8: torch.tensor(300).fill_(2)}
     module = torch.nn.Linear(10, 300)
     with torch.no_grad():
         module.weight.copy_(torch.zeros(300, 10))
         copy_embeddings_(module.weight, lookup)
     assert module.weight[:, 9].eq(1).all()
-    for index in range(9):
+    assert module.weight[:, 8].eq(2).all()
+    for index in range(8):
         assert module.weight[:, index].eq(0).all()
 
 
