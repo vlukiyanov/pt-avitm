@@ -70,6 +70,13 @@ def main(
             'loss': loss,
             'perplexity': perplexity,
         }, global_step=epoch)
+        decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
+        topics = [
+            [reverse_vocab[item.item()] for item in topic]
+            for topic in decoder_weight.topk(top_words, dim=0)[1].t()
+        ]
+        for index, topic in enumerate(topics):
+            print(str(index) + ':' + ','.join(topic))
 
     ds_train = TensorDataset(torch.from_numpy(data_train).float())
     ds_val = TensorDataset(torch.from_numpy(data_val).float())
