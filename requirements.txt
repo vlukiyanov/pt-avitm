@@ -14,5 +14,5 @@ setuptools>=40.2.0
 seaborn>=0.9.0
 torchvision>=0.2.1
 pytest>=3.8.0
-pytest-cov>=2.6.0
-codecov>=2.0.15
+pytest-cov=2.6.0
+codecov=2.0.15
