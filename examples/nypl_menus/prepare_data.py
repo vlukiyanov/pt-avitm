@@ -50,7 +50,7 @@ texts['processed_text'] = texts['text'].apply(process)
 
 print('Vectorising data')
 vectorizer = CountVectorizer(stop_words='english', max_features=max_features)
-term_document = vectorizer.fit_transform(texts.text)
+term_document = vectorizer.fit_transform(texts['processed_text'])
 
 print('Saving data')
 # TODO validation
