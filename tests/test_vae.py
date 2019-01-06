@@ -1,6 +1,6 @@
 import torch
 
-from ptavitm.vae import prior, ProdLDA
+from ptavitm.vae import copy_embeddings_, prior, ProdLDA
 
 
 def test_prior():
@@ -10,12 +10,53 @@ def test_prior():
     assert prior_var.allclose(prior_var.new().resize_as_(prior_var).fill_(0.98))
 
 
+def test_copy_embeddings():
+    lookup = {9: torch.ones(300), 8: torch.tensor(300).fill_(2)}
+    module = torch.nn.Linear(10, 300)
+    with torch.no_grad():
+        module.weight.copy_(torch.zeros(300, 10))
+        copy_embeddings_(module.weight, lookup)
+    assert module.weight[:, 9].eq(1).all()
+    assert module.weight[:, 8].eq(2).all()
+    for index in range(8):
+        assert module.weight[:, index].eq(0).all()
+
+
+def test_copy_embeddings_model():
+    lookup = {9: torch.ones(20), 8: torch.tensor(20).fill_(2)}
+    vae = ProdLDA(
+        in_dimension=10,
+        hidden1_dimension=20,
+        hidden2_dimension=10,
+        topics=5,
+        word_embeddings=lookup
+    )
+    assert vae.encoder.linear1.weight[:, 9].eq(1).all()
+    assert vae.encoder.linear1.weight[:, 8].eq(2).all()
+
+
 def test_forward_dimensions():
     vae = ProdLDA(
         in_dimension=10,
         hidden1_dimension=20,
         hidden2_dimension=10,
         topics=5
+    )
+    for size in [10, 100, 1000]:
+        batch = torch.zeros(size, 10)
+        recon, mean, logvar = vae(batch)
+        assert recon.shape == batch.shape
+        assert mean.shape == (size, 5)
+        assert logvar.shape == (size, 5)
+
+
+def test_not_train_embeddings():
+    vae = ProdLDA(
+        in_dimension=10,
+        hidden1_dimension=20,
+        hidden2_dimension=10,
+        topics=5,
+        train_word_embeddings=False
     )
     for size in [10, 100, 1000]:
         batch = torch.zeros(size, 10)
