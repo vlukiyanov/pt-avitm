@@ -50,16 +50,12 @@ def main(
 ):
     print('Loading input data')
     # TODO fix relative paths
-    input_train = np.load('data/train.txt.npy', encoding='bytes')
-    input_val = np.load('data/test.txt.npy', encoding='bytes')
+    data_train = np.load('data/train.txt.npy', encoding='bytes')
+    data_val = np.load('data/test.txt.npy', encoding='bytes')
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
     reverse_vocab = {vocab[word]: word for word in vocab}
     indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]
-    data_train = np.array(
-        [np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0]
-    )
-    data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
 
     writer = SummaryWriter()  # create the TensorBoard object
 

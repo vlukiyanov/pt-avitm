@@ -3,11 +3,13 @@ import numpy as np
 from torch.optim import Adam
 import torch
 from torch.utils.data import TensorDataset
+from scipy.sparse import load_npz
 from tensorboardX import SummaryWriter
 import pickle
 
 from ptavitm.model import train
 from ptavitm.vae import ProdLDA
+from ptavitm.utils import CountTensorDataset
 
 
 @click.command()
@@ -33,7 +35,7 @@ from ptavitm.vae import ProdLDA
     '--top-words',
     help='number of top words to report per topic (default 12).',
     type=int,
-    default=12
+    default=35
 )
 @click.option(
     '--testing-mode',
@@ -50,17 +52,12 @@ def main(
 ):
     print('Loading input data')
     # TODO fix relative paths
-    input_train = np.load('data/train.txt.npy', encoding='bytes')
-    input_val = np.load('data/test.txt.npy', encoding='bytes')
+    data_train = load_npz('data/train.txt.npz')
+    data_val = load_npz('data/test.txt.npz')
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
     reverse_vocab = {vocab[word]: word for word in vocab}
     indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]
-    data_train = np.array(
-        [np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0]
-    )
-    data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
-
     writer = SummaryWriter()  # create the TensorBoard object
 
     # callback function to call during training, uses writer from the scope
@@ -78,8 +75,8 @@ def main(
         for index, topic in enumerate(topics):
             print(str(index) + ':' + ','.join(topic))
 
-    ds_train = TensorDataset(torch.from_numpy(data_train).float())
-    ds_val = TensorDataset(torch.from_numpy(data_val).float())
+    ds_train = CountTensorDataset(data_train)
+    ds_val = CountTensorDataset(data_val)
     autoencoder = ProdLDA(
         in_dimension=len(vocab),
         hidden1_dimension=100,
