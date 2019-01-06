@@ -3,14 +3,15 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from typing import Tuple
+from typing import Callable, Mapping, Optional, Tuple
 
 
-def prior(topics):
+def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """
+    Prior for the model.
 
-    :param topics:
-    :return:
+    :param topics: number of topics
+    :return: mean and variance tensors
     """
     a = torch.Tensor(1, topics).float().fill_(1.0)
     mean = a.log().t() - a.log().mean(1)
@@ -18,7 +19,10 @@ def prior(topics):
     return mean.t(), var.t()
 
 
-def encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise=0.2):
+def encoder(in_dimension: int,
+            hidden1_dimension: int,
+            hidden2_dimension: int,
+            encoder_noise: float = 0.2) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
         ('linear1', nn.Linear(in_dimension, hidden1_dimension)),
         ('act1', nn.Softplus()),
@@ -28,7 +32,29 @@ def encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise=0.
     ]))
 
 
-def decoder(in_dimension, topics, decoder_noise, eps, momentum):
+def copy_embeddings_(tensor: torch.Tensor,
+                     embedding: Callable[[str], Optional[torch.Tensor]],
+                     lookup: Mapping[int, str]) -> None:
+    """
+    Helper function for mutating the weight of an initial linear embedding module using
+    precomputed word vectors.
+
+    :param tensor: weight Tensor to mutate of shape [embedding_dimension, features]
+    :param embedding: callable which given a word string returns its embedding Tensor or None if out of vocabulary
+    :param lookup: given an index return the corresponding word string
+    :return: None
+    """
+    for index in range(tensor.shape[1]):
+        current_embedding = embedding(lookup[index])
+        if current_embedding is not None:
+            tensor[:, index].copy_(current_embedding)
+
+
+def decoder(in_dimension: int,
+            topics: int,
+            decoder_noise: float,
+            eps: float,
+            momentum: float) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
         ('linear', nn.Linear(topics, in_dimension, bias=False)),
         ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=eps, momentum=momentum)),
@@ -37,7 +63,10 @@ def decoder(in_dimension, topics, decoder_noise, eps, momentum):
     ]))
 
 
-def hidden(hidden2_dimension, topics, eps, momentum):
+def hidden(hidden2_dimension: int,
+           topics: int,
+           eps: float,
+           momentum: float) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
         ('linear', nn.Linear(hidden2_dimension, topics)),
         ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=eps, momentum=momentum))

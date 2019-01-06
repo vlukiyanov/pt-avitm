@@ -1,6 +1,6 @@
 import torch
 
-from ptavitm.vae import prior, ProdLDA
+from ptavitm.vae import copy_embeddings_, prior, ProdLDA
 
 
 def test_prior():
@@ -8,6 +8,20 @@ def test_prior():
     prior_mean, prior_var = prior(50)
     assert prior_mean.allclose(prior_mean.new().resize_as_(prior_mean).fill_(0.0))
     assert prior_var.allclose(prior_var.new().resize_as_(prior_var).fill_(0.98))
+
+
+def test_copy_embeddings():
+    def embedding(word):
+        return torch.ones(300) if word == 'test' else None
+
+    lookup = {**{index: 'z'*index for index in range(9)}, **{9: 'test'}}
+    module = torch.nn.Linear(10, 300)
+    with torch.no_grad():
+        module.weight.copy_(torch.zeros(300, 10))
+        copy_embeddings_(module.weight, embedding, lookup)
+    assert module.weight[:, 9].eq(1).all()
+    for index in range(9):
+        assert module.weight[:, index].eq(0).all()
 
 
 def test_forward_dimensions():
