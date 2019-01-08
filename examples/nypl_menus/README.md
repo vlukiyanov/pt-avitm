@@ -1,4 +1,5 @@
-Work in progress...
+# New York Public Library menus dataset 
 
-Basic example using the New York Public Library menus dataset; you will need to download and extract the dataset into the 
-data folder and then run the prepare_data script, before running the nypl_menus.py topic modelling script.
+This example uses the data from the dataset which can be found at http://menus.nypl.org/. 
+To run the example you will need to place the unzipped downloaded files in the `data_input` folder and
+then run `prepare_data.py` to populate the `data` folder.
