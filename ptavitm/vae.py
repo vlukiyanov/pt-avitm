@@ -3,7 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from typing import Callable, Mapping, Optional, Tuple, Union
+from typing import Mapping, Optional, Tuple
 
 
 def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -91,8 +91,8 @@ class ProdLDA(nn.Module):
             in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # set the priors, do not learn them
-        self.prior_mean, self.prior_var = prior(topics)
-        self.prior_logvar = self.prior_var.log()
+        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics))
+        self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False
         self.prior_logvar.requires_grad = False
