@@ -17,3 +17,4 @@ pytest==3.8.0
 pytest-cov==2.6.0
 codecov==2.0.15
 textacy>=0.6.2
+gensim>=3.6.0

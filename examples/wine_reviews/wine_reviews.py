@@ -1,8 +1,8 @@
 import click
-import numpy as np
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.matutils import Sparse2Corpus
 from torch.optim import Adam
-import torch
-from torch.utils.data import TensorDataset
 from scipy.sparse import load_npz
 from tensorboardX import SummaryWriter
 import pickle
@@ -17,7 +17,7 @@ from ptavitm.utils import CountTensorDataset
     '--cuda',
     help='whether to use CUDA (default False).',
     type=bool,
-    default=False
+    default=True
 )
 @click.option(
     '--batch-size',
@@ -35,11 +35,17 @@ from ptavitm.utils import CountTensorDataset
     '--top-words',
     help='number of top words to report per topic (default 12).',
     type=int,
-    default=35
+    default=20
 )
 @click.option(
     '--testing-mode',
     help='whether to run in testing mode (default False).',
+    type=bool,
+    default=False
+)
+@click.option(
+    '--verbose-mode',
+    help='whether to run in verbose mode (default False).',
     type=bool,
     default=False
 )
@@ -49,11 +55,13 @@ def main(
     epochs,
     top_words,
     testing_mode,
+    verbose_mode
 ):
     print('Loading input data')
     # TODO fix relative paths
     data_train = load_npz('data/train.txt.npz')
     data_val = load_npz('data/test.txt.npz')
+    corpus = Sparse2Corpus(data_train, documents_columns=False)
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
     reverse_vocab = {vocab[word]: word for word in vocab}
@@ -62,18 +70,31 @@ def main(
 
     # callback function to call during training, uses writer from the scope
     def training_callback(autoencoder, epoch, lr, loss, perplexity):
+        if verbose_mode:
+            decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
+            topics = [
+                [reverse_vocab[item.item()] for item in topic]
+                for topic in decoder_weight.topk(top_words, dim=0)[1].t()
+            ]
+            cm = CoherenceModel(
+                topics=topics,
+                corpus=corpus,
+                dictionary=Dictionary.from_corpus(corpus, reverse_vocab),
+                coherence='u_mass'
+            )
+            coherence = cm.get_coherence()
+            coherences = cm.get_coherence_per_topic()
+            for index, topic in enumerate(topics):
+                print(str(index) + ':' + str(coherences[index]) + ':' + ','.join(topic))
+            print(coherence)
+        else:
+            coherence = 0
         writer.add_scalars('data/autoencoder', {
             'lr': lr,
             'loss': loss,
             'perplexity': perplexity,
+            'coherence': coherence,
         }, global_step=epoch)
-        decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
-        topics = [
-            [reverse_vocab[item.item()] for item in topic]
-            for topic in decoder_weight.topk(top_words, dim=0)[1].t()
-        ]
-        for index, topic in enumerate(topics):
-            print(str(index) + ':' + ','.join(topic))
 
     ds_train = CountTensorDataset(data_train)
     ds_val = CountTensorDataset(data_val)
@@ -95,7 +116,8 @@ def main(
         epochs=epochs,
         batch_size=batch_size,
         optimizer=ae_optimizer,
-        update_callback=training_callback
+        update_callback=training_callback,
+        num_workers=4
     )
     autoencoder.eval()
     decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
@@ -103,8 +125,17 @@ def main(
         [reverse_vocab[item.item()] for item in topic]
         for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
-    for topic in topics:
-        print(','.join(topic))
+    cm = CoherenceModel(
+        topics=topics,
+        corpus=corpus,
+        dictionary=Dictionary.from_corpus(corpus, reverse_vocab),
+        coherence='u_mass'
+    )
+    coherence = cm.get_coherence()
+    coherences = cm.get_coherence_per_topic()
+    for index, topic in enumerate(topics):
+        print(str(index) + ':' + str(coherences[index]) + ':' + ','.join(topic))
+    print(coherence)
     if not testing_mode:
         writer.add_embedding(
             autoencoder.encoder.linear1.weight.detach().cpu().t(),

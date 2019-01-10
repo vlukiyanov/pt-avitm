@@ -6,7 +6,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from scipy.sparse import save_npz
 import textacy
 
-max_features = 7500
+max_features = 10000
 
 
 def process(text):
