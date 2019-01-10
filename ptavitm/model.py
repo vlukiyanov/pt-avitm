@@ -45,7 +45,7 @@ def train(dataset: torch.utils.data.Dataset,
         batch_size=batch_size,
         pin_memory=False,
         sampler=sampler,
-        shuffle=True,
+        shuffle=True if sampler is None else False,
         num_workers=num_workers
     )
     if validation is not None:
