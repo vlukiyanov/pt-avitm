@@ -2,7 +2,9 @@ import click
 from gensim.corpora.dictionary import Dictionary
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.matutils import Sparse2Corpus
+import torch
 from torch.optim import Adam
+from torch.utils.data.sampler import WeightedRandomSampler
 from scipy.sparse import load_npz
 from tensorboardX import SummaryWriter
 import pickle
@@ -117,6 +119,7 @@ def main(
         batch_size=batch_size,
         optimizer=ae_optimizer,
         update_callback=training_callback,
+        sampler=WeightedRandomSampler(torch.ones(data_train.shape[0]), 20000),
         num_workers=4
     )
     autoencoder.eval()
