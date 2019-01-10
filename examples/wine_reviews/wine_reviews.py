@@ -17,7 +17,7 @@ from ptavitm.utils import CountTensorDataset
     '--cuda',
     help='whether to use CUDA (default False).',
     type=bool,
-    default=True
+    default=False
 )
 @click.option(
     '--batch-size',
