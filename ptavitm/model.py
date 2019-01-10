@@ -18,7 +18,8 @@ def train(dataset: torch.utils.data.Dataset,
           silent: bool = False,
           update_freq: Optional[int] = 1,
           update_callback: Optional[Callable[[float, float], None]] = None,
-          epoch_callback: Optional[Callable[[int, torch.nn.Module], None]] = None) -> None:
+          epoch_callback: Optional[Callable[[int, torch.nn.Module], None]] = None,
+          num_workers: int = 0) -> None:
     """
     Function to train an autoencoder using the provided dataset.
 
@@ -36,6 +37,7 @@ def train(dataset: torch.utils.data.Dataset,
     :param update_freq: frequency of batches with which to update counter, set to None disables, default 1
     :param update_callback: optional function of loss and validation loss to update
     :param epoch_callback: optional function of epoch and model
+    :param num_workers: optional number of workers for loader
     :return: None
     """
     dataloader = DataLoader(
@@ -43,7 +45,8 @@ def train(dataset: torch.utils.data.Dataset,
         batch_size=batch_size,
         pin_memory=False,
         sampler=sampler,
-        shuffle=True
+        shuffle=True,
+        num_workers=num_workers
     )
     if validation is not None:
         validation_loader = DataLoader(
@@ -51,7 +54,8 @@ def train(dataset: torch.utils.data.Dataset,
             batch_size=batch_size,
             pin_memory=False,
             sampler=None,
-            shuffle=False
+            shuffle=False,
+            num_workers=num_workers
         )
     else:
         validation_loader = None
@@ -142,7 +146,8 @@ def predict(dataset: torch.utils.data.Dataset,
             batch_size: int,
             cuda: bool = False,
             silent: bool = False,
-            encode: bool = True) -> torch.Tensor:
+            encode: bool = True,
+            num_workers: int = 0) -> torch.Tensor:
     """
     Given a dataset, run the model in evaluation mode with the inputs in batches and concatenate the
     output.
@@ -153,13 +158,15 @@ def predict(dataset: torch.utils.data.Dataset,
     :param cuda: whether CUDA is used, defaults to True
     :param silent: set to True to prevent printing out summary statistics, defaults to False
     :param encode: whether to encode or use the full autoencoder
+    :param num_workers: optional number of workers for loader
     :return: predicted features from the Dataset
     """
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
         pin_memory=False,
-        shuffle=False
+        shuffle=False,
+        num_workers=num_workers
     )
     data_iterator = tqdm(
         dataloader,
