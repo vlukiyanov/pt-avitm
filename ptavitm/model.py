@@ -100,7 +100,7 @@ def train(dataset: torch.utils.data.Dataset,
                 ppx='%.6f' % perplexity_value,
             )
         if update_freq is not None and epoch % update_freq == 0:
-            average_loss = (sum(losses)/len(losses)) if len(losses) > 0 else -1
+            average_loss = (sum(losses) / len(losses)) if len(losses) > 0 else -1
             if validation_loader is not None:
                 autoencoder.eval()
                 perplexity_value = perplexity(validation_loader, autoencoder, cuda, silent)
@@ -137,7 +137,7 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         recon, mean, logvar = model(batch)
         losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
-    return float((torch.cat(losses)/torch.cat(counts)).mean().exp().item())
+    return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
 
 
 # TODO needed?

@@ -35,7 +35,7 @@ print('Merging data')
 merged = pd.merge(
     pd.merge(menu, menu_page, on='menu_id'),
     pd.merge(menu_item, dish, on='dish_id'),
-    on ='menu_page_id'
+    on='menu_page_id'
 )
 
 print('Cleaning data')
