@@ -141,11 +141,13 @@ class ProdLDA(nn.Module):
         :param posterior_logvar: posterior log variance
         :return: unaveraged loss tensor
         """
-        # TODO check this again against TF implementation adding tests
+        # TODO check this again against original paper and TF implementation by adding tests
         # https://github.com/akashgit/autoencoding_vi_for_topic_models/blob/master/models/prodlda.py
         # reconstruction loss
+        # this is the second line in Eq. 7
         rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         # KL divergence
+        # this is the first line in Eq. 7
         prior_mean = self.prior_mean.expand_as(posterior_mean)
         prior_var = self.prior_var.expand_as(posterior_logvar)
         prior_logvar = self.prior_logvar.expand_as(posterior_logvar)
