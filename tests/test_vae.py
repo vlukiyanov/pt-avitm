@@ -50,6 +50,21 @@ def test_forward_dimensions():
         assert logvar.shape == (size, 5)
 
 
+def test_loss_basic():
+    vae = ProdLDA(
+        in_dimension=10,
+        hidden1_dimension=20,
+        hidden2_dimension=10,
+        topics=5
+    )
+    for size in [10, 100, 1000]:
+        batch = torch.zeros(size, 10)
+        loss = vae.loss(batch, batch, vae.prior_mean, vae.prior_logvar)
+        assert loss.shape == (size,)
+        assert loss.mean().item() == 0
+        assert torch.all(torch.lt(torch.abs(loss), 0)).item() == 0
+
+
 def test_not_train_embeddings():
     vae = ProdLDA(
         in_dimension=10,
