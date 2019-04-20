@@ -182,7 +182,8 @@ def predict(dataset: torch.utils.data.Dataset,
             batch = batch.cuda(non_blocking=True)
         if encode:
             output = model.encode(batch)
+            features.append(output[1].detach().cpu().exp())  # move to the CPU to prevent out of memory on the GPU
         else:
-            output = model(batch)
-        features.append(output[1].detach().cpu())  # move to the CPU to prevent out of memory on the GPU
-    return torch.cat(features).exp()
+            output = model.forward(batch)
+            features.append(output.detach().cpu())  # move to the CPU to prevent out of memory on the GPU
+    return torch.cat(features)
