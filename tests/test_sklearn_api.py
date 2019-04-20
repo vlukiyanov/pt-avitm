@@ -38,6 +38,5 @@ def test_score():
     param_grid = {
         'topic__epochs': [1, 2, 3],
     }
-    search = GridSearchCV(pipeline, param_grid, iid=False, cv=2,
-                          return_train_score=False)
+    search = GridSearchCV(pipeline, param_grid, iid=False, cv=2, return_train_score=False)
     search.fit([fake.text() for _ in range(10)])
