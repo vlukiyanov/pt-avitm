@@ -62,8 +62,8 @@ def test_perplexity():
 def test_predict():
     # only tests the encode=True
     autoencoder = Mock()
-    autoencoder.encode.return_value = torch.tensor([1], dtype=torch.float)
+    autoencoder.forward.return_value = torch.tensor([1], dtype=torch.float)
     dataset = TensorDataset(torch.zeros(100, 1000))
-    output = predict(dataset, autoencoder, batch_size=10)
-    assert autoencoder.encode.call_count == 10
+    output = predict(dataset, autoencoder, batch_size=10, encode=False)
+    assert autoencoder.forward.call_count == 10
     assert output.shape == (10,)

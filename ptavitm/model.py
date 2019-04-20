@@ -140,7 +140,6 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
 
 
-# TODO needed?
 def predict(dataset: torch.utils.data.Dataset,
             model: torch.nn.Module,
             batch_size: int,
@@ -183,7 +182,8 @@ def predict(dataset: torch.utils.data.Dataset,
             batch = batch.cuda(non_blocking=True)
         if encode:
             output = model.encode(batch)
+            features.append(output[1].detach().cpu().exp())  # move to the CPU to prevent out of memory on the GPU
         else:
-            output = model(batch)
-        features.append(output.detach().cpu())  # move to the CPU to prevent out of memory on the GPU
+            output = model.forward(batch)
+            features.append(output.detach().cpu())  # move to the CPU to prevent out of memory on the GPU
     return torch.cat(features)
