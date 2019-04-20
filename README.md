@@ -21,17 +21,15 @@ from sklearn.pipeline import make_pipeline
 
 from ptavitm.sklearn_api import ProdLDATransformer
 
-
 pipeline = make_pipeline(
     CountVectorizer(
         stop_words='english',
-        max_features=25,
+        max_features=2500,
         max_df=0.9
     ),
-    ProdLDATransformer(
-        epochs=1
-    )
+    ProdLDATransformer()
 )
+
 pipeline.fit(texts)
 result = pipeline.transform(texts)
 ```
