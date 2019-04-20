@@ -26,7 +26,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
                  topics=50,
                  lr=0.001,
                  samples=20000,
-                 score_type='perlexity') -> None:
+                 score_type='coherence') -> None:
         self.cuda = torch.cuda.is_available() if cuda is None else cuda
         self.batch_size = batch_size
         self.epochs = epochs
@@ -37,8 +37,8 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         self.samples = samples
         self.autoencoder = None
         self.score_type = score_type
-        if self.score_type not in ['perlexity']:
-            raise ValueError('score_type must be "perplexity"')
+        if self.score_type not in ['coherence']:
+            raise ValueError('score_type must be "coherence"')
 
     def fit(self, X, y=None) -> None:
         samples, documents = X.shape
@@ -101,4 +101,5 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             dictionary=Dictionary.from_corpus(corpus, id2word),
             coherence='u_mass'
         )
+
         return cm.get_coherence()
