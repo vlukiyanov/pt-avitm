@@ -9,11 +9,32 @@ Currently this is work in progress, and is lacking more tests and further exampl
 
 ## Examples
 
-TODO
+You can find a number of examples in the examples directory.
 
 ## Usage
 
-TODO
+The simplest way to use the library is using the sklearn-compatible API, as below.
+
+```python
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import make_pipeline
+
+from ptavitm.sklearn_api import ProdLDATransformer
+
+
+pipeline = make_pipeline(
+    CountVectorizer(
+        stop_words='english',
+        max_features=25,
+        max_df=0.9
+    ),
+    ProdLDATransformer(
+        epochs=1
+    )
+)
+pipeline.fit(texts)
+result = pipeline.transform(texts)
+```
 
 ## Other implementations of AVITM and similar
 
