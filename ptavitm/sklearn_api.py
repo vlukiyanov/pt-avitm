@@ -1,3 +1,6 @@
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.matutils import Sparse2Corpus
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
@@ -22,7 +25,8 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
                  hidden2_dimension=100,
                  topics=50,
                  lr=0.001,
-                 sample=20000) -> None:
+                 samples=20000,
+                 score_type='perlexity') -> None:
         self.cuda = torch.cuda.is_available() if cuda is None else cuda
         self.batch_size = batch_size
         self.epochs = epochs
@@ -30,8 +34,11 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         self.hidden2_dimension = hidden2_dimension
         self.topics = topics
         self.lr = lr
-        self.sample = sample
+        self.samples = samples
         self.autoencoder = None
+        self.score_type = score_type
+        if self.score_type not in ['perlexity']:
+            raise ValueError('score_type must be "perplexity"')
 
     def fit(self, X, y=None) -> None:
         samples, documents = X.shape
@@ -57,12 +64,12 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             epochs=self.epochs,
             batch_size=self.batch_size,
             optimizer=ae_optimizer,
-            sampler=WeightedRandomSampler(torch.ones(samples), max(samples, self.sample)),
+            sampler=WeightedRandomSampler(torch.ones(samples), max(samples, self.samples)),
             silent=True,
-            num_workers=1  # TODO causes a bug to change this on Mac
+            num_workers=0  # TODO causes a bug to change this on Mac
         )
 
-    def transform(self, X) -> None:
+    def transform(self, X):
         if self.autoencoder is None:
             raise NotFittedError
         self.autoencoder.eval()
@@ -72,9 +79,26 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             self.autoencoder,
             encode=True,
             silent=True,
-            batch_size=self.batch_size
+            batch_size=self.batch_size,
+            num_workers=0  # TODO causes a bug to change this on Mac
         )
-        return output
+        return output.numpy()
 
-    def score(self, X, y=None) -> float:
-        return 1
+    def score(self, X, y=None, sample_weight=None) -> float:
+        if self.autoencoder is None:
+            raise NotFittedError
+        self.autoencoder.eval()
+        corpus = Sparse2Corpus(X, documents_columns=False)
+        decoder_weight = self.autoencoder.decoder.linear.weight.detach().cpu()
+        id2word = {index: str(index) for index in range(X.shape[1])}
+        topics = [
+            [str(item.item()) for item in topic]
+            for topic in decoder_weight.topk(3, dim=0)[1].t()
+        ]
+        cm = CoherenceModel(
+            topics=topics,
+            corpus=corpus,
+            dictionary=Dictionary.from_corpus(corpus, id2word),
+            coherence='u_mass'
+        )
+        return cm.get_coherence()
