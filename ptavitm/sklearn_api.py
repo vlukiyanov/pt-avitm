@@ -13,7 +13,7 @@ from ptavitm.vae import ProdLDA
 from ptavitm.utils import CountTensorDataset
 
 
-# TODO decide how a partial_fit method API might work and implement
+# TODO decide how a partial_fit method API might work and implement, also more thought into score and logging
 
 
 class ProdLDATransformer(TransformerMixin, BaseEstimator):
@@ -26,6 +26,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
                  topics=50,
                  lr=0.001,
                  samples=20000,
+                 score_num=7,
                  score_type='coherence') -> None:
         self.cuda = torch.cuda.is_available() if cuda is None else cuda
         self.batch_size = batch_size
@@ -37,6 +38,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         self.samples = samples
         self.autoencoder = None
         self.score_type = score_type
+        self.score_num = score_num
         if self.score_type not in ['coherence']:
             raise ValueError('score_type must be "coherence"')
 
@@ -85,6 +87,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         return output.numpy()
 
     def score(self, X, y=None, sample_weight=None) -> float:
+        # TODO this needs further testing for correctness, WIP
         if self.autoencoder is None:
             raise NotFittedError
         self.autoencoder.eval()
@@ -93,7 +96,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         id2word = {index: str(index) for index in range(X.shape[1])}
         topics = [
             [str(item.item()) for item in topic]
-            for topic in decoder_weight.topk(3, dim=0)[1].t()
+            for topic in decoder_weight.topk(min(self.score_num, X.shape[1]), dim=0)[1].t()
         ]
         cm = CoherenceModel(
             topics=topics,
@@ -101,5 +104,4 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             dictionary=Dictionary.from_corpus(corpus, id2word),
             coherence='u_mass'
         )
-
         return cm.get_coherence()
