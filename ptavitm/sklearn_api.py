@@ -43,10 +43,10 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             raise ValueError('score_type must be "coherence"')
 
     def fit(self, X, y=None) -> None:
-        samples, documents = X.shape
+        documents, features = X.shape
         ds = CountTensorDataset(X.astype(np.float32))
         self.autoencoder = ProdLDA(
-            in_dimension=documents,
+            in_dimension=features,
             hidden1_dimension=self.hidden1_dimension,
             hidden2_dimension=self.hidden2_dimension,
             topics=self.topics
@@ -66,7 +66,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             epochs=self.epochs,
             batch_size=self.batch_size,
             optimizer=ae_optimizer,
-            sampler=WeightedRandomSampler(torch.ones(samples), max(samples, self.samples)),
+            sampler=WeightedRandomSampler(torch.ones(documents), min(documents, self.samples)),
             silent=True,
             num_workers=0  # TODO causes a bug to change this on Mac
         )
