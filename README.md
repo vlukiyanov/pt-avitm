@@ -1,4 +1,5 @@
 # pt-avitm
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/856b27e9649f47d0adb6c2550f8e6d3d)](https://app.codacy.com/app/vlukiyanov/pt-avitm?utm_source=github.com&utm_medium=referral&utm_content=vlukiyanov/pt-avitm&utm_campaign=Badge_Grade_Settings)
 [![Build Status](https://travis-ci.org/vlukiyanov/pt-avitm.svg?branch=master)](https://travis-ci.org/vlukiyanov/pt-avitm) [![codecov](https://codecov.io/gh/vlukiyanov/pt-avitm/branch/master/graph/badge.svg)](https://codecov.io/gh/vlukiyanov/pt-avitm)
 
 PyTorch implementation of a version of the Autoencoding Variational Inference For Topic Models (AVITM) algorithm. Compatible with PyTorch 1.0.0 and Python 3.6 or 3.7 with or without CUDA.
