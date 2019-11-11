@@ -79,12 +79,13 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         output = predict(
             ds,
             self.autoencoder,
+            cuda=self.cuda,
             encode=True,
             silent=True,
             batch_size=self.batch_size,
             num_workers=0  # TODO causes a bug to change this on Mac
         )
-        return output.numpy()
+        return output.cpu().numpy()
 
     def score(self, X, y=None, sample_weight=None) -> float:
         # TODO this needs further testing for correctness, WIP
