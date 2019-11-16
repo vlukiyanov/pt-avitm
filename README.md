@@ -6,11 +6,9 @@ PyTorch implementation of a version of the Autoencoding Variational Inference Fo
 
 This follows (*or attempts to; note this implementation is unofficial*) the algorithm described in "Autoencoding Variational Inference For Topic Models" of Akash Srivastava, Charles Sutton (https://arxiv.org/abs/1703.01488).
 
-Currently this is work in progress, and is lacking more tests and further examples.
-
 ## Examples
 
-You can find a number of examples in the examples directory.
+You can find a number of examples in the examples directory, see also Usage below.
 
 ## Usage
 
