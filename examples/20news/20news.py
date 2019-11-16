@@ -1,4 +1,7 @@
 import click
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.matutils import Dense2Corpus
 import numpy as np
 from torch.optim import Adam
 import torch
@@ -60,23 +63,33 @@ def main(
         [np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_train if doc.sum() > 0]
     )
     data_val = np.array([np.bincount(doc.astype('int'), minlength=len(vocab)) for doc in input_val if doc.sum() > 0])
-
+    corpus = Dense2Corpus(data_train, documents_columns=False)
     writer = SummaryWriter()  # create the TensorBoard object
 
     # callback function to call during training, uses writer from the scope
     def training_callback(autoencoder, epoch, lr, loss, perplexity):
-        writer.add_scalars('data/autoencoder', {
-            'lr': lr,
-            'loss': loss,
-            'perplexity': perplexity,
-        }, global_step=epoch)
         decoder_weight = autoencoder.decoder.linear.weight.detach().cpu()
         topics = [
             [reverse_vocab[item.item()] for item in topic]
             for topic in decoder_weight.topk(top_words, dim=0)[1].t()
         ]
+        cm = CoherenceModel(
+            topics=topics,
+            corpus=corpus,
+            dictionary=Dictionary.from_corpus(corpus, reverse_vocab),
+            coherence='u_mass'
+        )
+        coherence = cm.get_coherence()
+        coherences = cm.get_coherence_per_topic()
         for index, topic in enumerate(topics):
-            print(str(index) + ':' + ','.join(topic))
+            print(str(index) + ':' + str(coherences[index]) + ':' + ','.join(topic))
+        print(coherence)
+        writer.add_scalars('data/autoencoder', {
+            'lr': lr,
+            'loss': loss,
+            'perplexity': perplexity,
+            'coherence': coherence,
+        }, global_step=epoch)
 
     ds_train = TensorDataset(torch.from_numpy(data_train).float())
     ds_val = TensorDataset(torch.from_numpy(data_val).float())
@@ -106,8 +119,17 @@ def main(
         [reverse_vocab[item.item()] for item in topic]
         for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
-    for topic in topics:
-        print(','.join(topic))
+    cm = CoherenceModel(
+        topics=topics,
+        corpus=corpus,
+        dictionary=Dictionary.from_corpus(corpus, reverse_vocab),
+        coherence='u_mass'
+    )
+    coherence = cm.get_coherence()
+    coherences = cm.get_coherence_per_topic()
+    for index, topic in enumerate(topics):
+        print(str(index) + ':' + str(coherences[index]) + ':' + ','.join(topic))
+    print(coherence)
     if not testing_mode:
         writer.add_embedding(
             autoencoder.encoder.linear1.weight.detach().cpu().t(),
