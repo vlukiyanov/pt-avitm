@@ -17,10 +17,13 @@ You can find a number of examples in the examples directory.
 The simplest way to use the library is using the sklearn-compatible API, as below.
 
 ```python
+import sklearn.datasets
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import make_pipeline
 
 from ptavitm.sklearn_api import ProdLDATransformer
+
+texts = sklearn.datasets.fetch_20newsgroups()['data']
 
 pipeline = make_pipeline(
     CountVectorizer(
