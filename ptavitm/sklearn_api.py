@@ -17,17 +17,19 @@ from ptavitm.utils import CountTensorDataset
 
 
 class ProdLDATransformer(TransformerMixin, BaseEstimator):
-    def __init__(self,
-                 cuda=None,
-                 batch_size=200,
-                 epochs=80,
-                 hidden1_dimension=100,
-                 hidden2_dimension=100,
-                 topics=50,
-                 lr=0.001,
-                 samples=20000,
-                 score_num=7,
-                 score_type='coherence') -> None:
+    def __init__(
+        self,
+        cuda=None,
+        batch_size=200,
+        epochs=80,
+        hidden1_dimension=100,
+        hidden2_dimension=100,
+        topics=50,
+        lr=0.001,
+        samples=20000,
+        score_num=7,
+        score_type="coherence",
+    ) -> None:
         self.cuda = torch.cuda.is_available() if cuda is None else cuda
         self.batch_size = batch_size
         self.epochs = epochs
@@ -39,7 +41,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         self.autoencoder = None
         self.score_type = score_type
         self.score_num = score_num
-        if self.score_type not in ['coherence']:
+        if self.score_type not in ["coherence"]:
             raise ValueError('score_type must be "coherence"')
 
     def fit(self, X, y=None) -> None:
@@ -49,14 +51,12 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             in_dimension=features,
             hidden1_dimension=self.hidden1_dimension,
             hidden2_dimension=self.hidden2_dimension,
-            topics=self.topics
+            topics=self.topics,
         )
         if self.cuda:
             self.autoencoder.cuda()
         ae_optimizer = Adam(
-            self.autoencoder.parameters(),
-            lr=self.lr,
-            betas=(0.99, 0.999)
+            self.autoencoder.parameters(), lr=self.lr, betas=(0.99, 0.999)
         )
         train(
             ds,
@@ -66,9 +66,11 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             epochs=self.epochs,
             batch_size=self.batch_size,
             optimizer=ae_optimizer,
-            sampler=WeightedRandomSampler(torch.ones(documents), min(documents, self.samples)),
+            sampler=WeightedRandomSampler(
+                torch.ones(documents), min(documents, self.samples)
+            ),
             silent=True,
-            num_workers=0  # TODO causes a bug to change this on Mac
+            num_workers=0,  # TODO causes a bug to change this on Mac
         )
 
     def transform(self, X):
@@ -83,7 +85,7 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
             encode=True,
             silent=True,
             batch_size=self.batch_size,
-            num_workers=0  # TODO causes a bug to change this on Mac
+            num_workers=0,  # TODO causes a bug to change this on Mac
         )
         return output.cpu().numpy()
 
@@ -97,12 +99,14 @@ class ProdLDATransformer(TransformerMixin, BaseEstimator):
         id2word = {index: str(index) for index in range(X.shape[1])}
         topics = [
             [str(item.item()) for item in topic]
-            for topic in decoder_weight.topk(min(self.score_num, X.shape[1]), dim=0)[1].t()
+            for topic in decoder_weight.topk(min(self.score_num, X.shape[1]), dim=0)[
+                1
+            ].t()
         ]
         cm = CoherenceModel(
             topics=topics,
             corpus=corpus,
             dictionary=Dictionary.from_corpus(corpus, id2word),
-            coherence='u_mass'
+            coherence="u_mass",
         )
         return cm.get_coherence()

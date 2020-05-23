@@ -15,7 +15,9 @@ def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     a = torch.Tensor(1, topics).float().fill_(1.0)
     mean = a.log().t() - a.log().mean(1)
-    var = ((1 - 2.0 / topics) * a.reciprocal()).t() + (1.0 / topics ** 2) * a.reciprocal().sum(1)
+    var = ((1 - 2.0 / topics) * a.reciprocal()).t() + (
+        1.0 / topics ** 2
+    ) * a.reciprocal().sum(1)
     return mean.t(), var.t()
 
 
@@ -34,61 +36,92 @@ def copy_embeddings_(tensor: torch.Tensor, lookup: Mapping[int, torch.Tensor]) -
             tensor[:, index].copy_(current_embedding)
 
 
-def encoder(in_dimension: int,
-            hidden1_dimension: int,
-            hidden2_dimension: int,
-            encoder_noise: float = 0.2) -> torch.nn.Module:
-    return nn.Sequential(OrderedDict([
-        ('linear1', nn.Linear(in_dimension, hidden1_dimension)),
-        ('act1', nn.Softplus()),
-        ('linear2', nn.Linear(hidden1_dimension, hidden2_dimension)),
-        ('act2', nn.Softplus()),
-        ('dropout', nn.Dropout(encoder_noise))
-    ]))
+def encoder(
+    in_dimension: int,
+    hidden1_dimension: int,
+    hidden2_dimension: int,
+    encoder_noise: float = 0.2,
+) -> torch.nn.Module:
+    return nn.Sequential(
+        OrderedDict(
+            [
+                ("linear1", nn.Linear(in_dimension, hidden1_dimension)),
+                ("act1", nn.Softplus()),
+                ("linear2", nn.Linear(hidden1_dimension, hidden2_dimension)),
+                ("act2", nn.Softplus()),
+                ("dropout", nn.Dropout(encoder_noise)),
+            ]
+        )
+    )
 
 
-def decoder(in_dimension: int,
-            topics: int,
-            decoder_noise: float,
-            eps: float,
-            momentum: float) -> torch.nn.Module:
-    return nn.Sequential(OrderedDict([
-        ('linear', nn.Linear(topics, in_dimension, bias=False)),
-        ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=eps, momentum=momentum)),
-        ('act', nn.Softmax(dim=1)),
-        ('dropout', nn.Dropout(decoder_noise))
-    ]))
+def decoder(
+    in_dimension: int, topics: int, decoder_noise: float, eps: float, momentum: float
+) -> torch.nn.Module:
+    return nn.Sequential(
+        OrderedDict(
+            [
+                ("linear", nn.Linear(topics, in_dimension, bias=False)),
+                (
+                    "batchnorm",
+                    nn.BatchNorm1d(
+                        in_dimension, affine=True, eps=eps, momentum=momentum
+                    ),
+                ),
+                ("act", nn.Softmax(dim=1)),
+                ("dropout", nn.Dropout(decoder_noise)),
+            ]
+        )
+    )
 
 
-def hidden(hidden2_dimension: int,
-           topics: int,
-           eps: float,
-           momentum: float) -> torch.nn.Module:
-    return nn.Sequential(OrderedDict([
-        ('linear', nn.Linear(hidden2_dimension, topics)),
-        ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=eps, momentum=momentum))
-    ]))
+def hidden(
+    hidden2_dimension: int, topics: int, eps: float, momentum: float
+) -> torch.nn.Module:
+    return nn.Sequential(
+        OrderedDict(
+            [
+                ("linear", nn.Linear(hidden2_dimension, topics)),
+                (
+                    "batchnorm",
+                    nn.BatchNorm1d(topics, affine=True, eps=eps, momentum=momentum),
+                ),
+            ]
+        )
+    )
 
 
 class ProdLDA(nn.Module):
-    def __init__(self,
-                 in_dimension: int,
-                 hidden1_dimension: int,
-                 hidden2_dimension: int,
-                 topics: int,
-                 decoder_noise: float = 0.2,
-                 encoder_noise: float = 0.2,
-                 batchnorm_eps: float = 0.001,
-                 batchnorm_momentum: float = 0.001,
-                 train_word_embeddings: bool = True,
-                 word_embeddings: Optional[Mapping[int, torch.Tensor]] = None) -> None:
+    def __init__(
+        self,
+        in_dimension: int,
+        hidden1_dimension: int,
+        hidden2_dimension: int,
+        topics: int,
+        decoder_noise: float = 0.2,
+        encoder_noise: float = 0.2,
+        batchnorm_eps: float = 0.001,
+        batchnorm_momentum: float = 0.001,
+        train_word_embeddings: bool = True,
+        word_embeddings: Optional[Mapping[int, torch.Tensor]] = None,
+    ) -> None:
         super(ProdLDA, self).__init__()
         self.topics = topics
-        self.encoder = encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise)
-        self.mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.encoder = encoder(
+            in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise
+        )
+        self.mean = hidden(
+            hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum
+        )
+        self.logvar = hidden(
+            hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum
+        )
         self.decoder = decoder(
-            in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
+            in_dimension,
+            topics,
+            decoder_noise=decoder_noise,
+            eps=batchnorm_eps,
+            momentum=batchnorm_momentum,
         )
         # set the priors, do not learn them
         self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics))
@@ -111,7 +144,9 @@ class ProdLDA(nn.Module):
         # initialize decoder weight
         nn.init.xavier_uniform_(self.decoder.linear.weight, gain=1)
 
-    def encode(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def encode(
+        self, batch: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         encoded = self.encoder(batch)
         return encoded, self.mean(encoded), self.logvar(encoded)
 
@@ -121,16 +156,20 @@ class ProdLDA(nn.Module):
         z = mean + logvar.exp().sqrt() * eps
         return self.decoder(z)
 
-    def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, batch: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _, mean, logvar = self.encode(batch)
         recon = self.decode(mean, logvar)
         return recon, mean, logvar
 
-    def loss(self,
-             input_tensor: torch.Tensor,
-             reconstructed_tensor: torch.Tensor,
-             posterior_mean: torch.Tensor,
-             posterior_logvar: torch.Tensor) -> torch.Tensor:
+    def loss(
+        self,
+        input_tensor: torch.Tensor,
+        reconstructed_tensor: torch.Tensor,
+        posterior_mean: torch.Tensor,
+        posterior_logvar: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Variational objective, see Section 3.3 of Akash Srivastava and Charles Sutton, 2017,
         https://arxiv.org/pdf/1703.01488.pdf; modified from https://github.com/hyqneuron/pytorch-avitm.
