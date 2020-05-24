@@ -10,14 +10,8 @@ def test_basic():
     fake = Faker()
     fake.seed(0)
     pipeline = make_pipeline(
-        CountVectorizer(
-            stop_words='english',
-            max_features=25,
-            max_df=0.9
-        ),
-        ProdLDATransformer(
-            epochs=1
-        )
+        CountVectorizer(stop_words="english", max_features=25, max_df=0.9),
+        ProdLDATransformer(epochs=1),
     )
     pipeline.fit([fake.text() for _ in range(100)])
     result = pipeline.transform([fake.text() for _ in range(20)])
@@ -27,16 +21,19 @@ def test_basic():
 def test_score():
     fake = Faker()
     fake.seed(0)
-    pipeline = Pipeline(steps=[
-        ('vectorizer', CountVectorizer(
-            stop_words='english',
-            max_features=25,
-            max_df=0.9
-        )),
-        ('topic', ProdLDATransformer(epochs=1))
-    ])
+    pipeline = Pipeline(
+        steps=[
+            (
+                "vectorizer",
+                CountVectorizer(stop_words="english", max_features=25, max_df=0.9),
+            ),
+            ("topic", ProdLDATransformer(epochs=1)),
+        ]
+    )
     param_grid = {
-        'topic__epochs': [1, 2, 3],
+        "topic__epochs": [1, 2, 3],
     }
-    search = GridSearchCV(pipeline, param_grid, iid=False, cv=2, return_train_score=False)
+    search = GridSearchCV(
+        pipeline, param_grid, iid=False, cv=2, return_train_score=False
+    )
     search.fit([fake.text() for _ in range(10)])

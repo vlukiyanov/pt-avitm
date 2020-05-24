@@ -7,7 +7,9 @@ from unittest.mock import Mock
 def test_train():
     autoencoder = Mock()
     autoencoder.return_value = [torch.tensor([1, 1], dtype=torch.float)] * 3
-    autoencoder.loss.return_value = torch.tensor([1, 1], dtype=torch.float).requires_grad_()
+    autoencoder.loss.return_value = torch.tensor(
+        [1, 1], dtype=torch.float
+    ).requires_grad_()
     optimizer = Mock()
     dataset = TensorDataset(torch.zeros(100, 1000))
     train(
@@ -15,7 +17,7 @@ def test_train():
         autoencoder=autoencoder,
         epochs=1,
         batch_size=10,
-        optimizer=optimizer
+        optimizer=optimizer,
     )
     autoencoder.train.assert_called_once()
     assert autoencoder.call_count == 10
@@ -36,7 +38,7 @@ def test_train_validation():
         autoencoder=autoencoder,
         epochs=1,
         batch_size=10,
-        optimizer=optimizer
+        optimizer=optimizer,
     )
     assert autoencoder.train.call_count == 2
     assert autoencoder.call_count == 11
@@ -47,11 +49,7 @@ def test_train_validation():
 def test_perplexity():
     dataset = TensorDataset(torch.ones(10, 1000))
     validation_loader = DataLoader(
-        dataset,
-        batch_size=10,
-        pin_memory=False,
-        sampler=None,
-        shuffle=False
+        dataset, batch_size=10, pin_memory=False, sampler=None, shuffle=False
     )
     autoencoder = Mock()
     autoencoder.return_value = [torch.ones(10, 10).float()] * 3

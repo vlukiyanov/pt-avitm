@@ -29,19 +29,14 @@ def test_copy_embeddings_model():
         hidden1_dimension=20,
         hidden2_dimension=10,
         topics=5,
-        word_embeddings=lookup
+        word_embeddings=lookup,
     )
     assert vae.encoder.linear1.weight[:, 9].eq(1).all()
     assert vae.encoder.linear1.weight[:, 8].eq(2).all()
 
 
 def test_forward_dimensions():
-    vae = ProdLDA(
-        in_dimension=10,
-        hidden1_dimension=20,
-        hidden2_dimension=10,
-        topics=5
-    )
+    vae = ProdLDA(in_dimension=10, hidden1_dimension=20, hidden2_dimension=10, topics=5)
     for size in [10, 100, 1000]:
         batch = torch.zeros(size, 10)
         recon, mean, logvar = vae(batch)
@@ -51,12 +46,7 @@ def test_forward_dimensions():
 
 
 def test_loss_basic():
-    vae = ProdLDA(
-        in_dimension=10,
-        hidden1_dimension=20,
-        hidden2_dimension=10,
-        topics=5
-    )
+    vae = ProdLDA(in_dimension=10, hidden1_dimension=20, hidden2_dimension=10, topics=5)
     for size in [10, 100, 1000]:
         batch = torch.zeros(size, 10)
         loss = vae.loss(batch, batch, vae.prior_mean, vae.prior_logvar)
@@ -71,7 +61,7 @@ def test_not_train_embeddings():
         hidden1_dimension=20,
         hidden2_dimension=10,
         topics=5,
-        train_word_embeddings=False
+        train_word_embeddings=False,
     )
     for size in [10, 100, 1000]:
         batch = torch.zeros(size, 10)
@@ -82,24 +72,30 @@ def test_not_train_embeddings():
 
 
 def test_parameters():
-    vae = ProdLDA(
-        in_dimension=10,
-        hidden1_dimension=20,
-        hidden2_dimension=10,
-        topics=5
-    )
+    vae = ProdLDA(in_dimension=10, hidden1_dimension=20, hidden2_dimension=10, topics=5)
     # encoder
     # two each for the linear units
     assert len(tuple(vae.encoder.parameters())) == 4
-    assert len(tuple(param for param in vae.encoder.parameters() if param.requires_grad)) == 4
+    assert (
+        len(tuple(param for param in vae.encoder.parameters() if param.requires_grad))
+        == 4
+    )
     # mean and logvar
     # two for the linear, two for the batchnorm
     assert len(tuple(vae.mean.parameters())) == 4
-    assert len(tuple(param for param in vae.mean.parameters() if param.requires_grad)) == 3
+    assert (
+        len(tuple(param for param in vae.mean.parameters() if param.requires_grad)) == 3
+    )
     assert len(tuple(vae.logvar.parameters())) == 4
-    assert len(tuple(param for param in vae.logvar.parameters() if param.requires_grad)) == 3
+    assert (
+        len(tuple(param for param in vae.logvar.parameters() if param.requires_grad))
+        == 3
+    )
     # decoder
     # one for the linear, two for the batchnorm
     assert len(tuple(vae.decoder.parameters())) == 3
     # batchnorm has no scale
-    assert len(tuple(param for param in vae.decoder.parameters() if param.requires_grad)) == 2
+    assert (
+        len(tuple(param for param in vae.decoder.parameters() if param.requires_grad))
+        == 2
+    )

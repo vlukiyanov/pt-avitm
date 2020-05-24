@@ -12,6 +12,7 @@ install:
 script:
   - black --fast --check ptavitm/.
   - black --fast --check examples/.
+  - black --fast --check tests/.
   - pytest --cov=ptavitm
 after_success:
   - codecov
